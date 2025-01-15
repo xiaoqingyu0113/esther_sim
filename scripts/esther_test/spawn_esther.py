@@ -3,12 +3,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""This script demonstrates how to use the interactive scene interface to setup a scene with multiple prims.
+"""This script demonstrates how to spawn a cart-pole and interact with it.
 
 .. code-block:: bash
 
     # Usage
-    ./isaaclab.sh -p source/standalone/tutorials/02_scene/create_scene.py --num_envs 32
+    ./isaaclab.sh -p source/standalone/tutorials/01_assets/run_articulation.py
 
 """
 
@@ -20,8 +20,7 @@ import argparse
 from omni.isaac.lab.app import AppLauncher
 
 # add argparse arguments
-parser = argparse.ArgumentParser(description="Tutorial on using the interactive scene interface.")
-parser.add_argument("--num_envs", type=int, default=2, help="Number of environments to spawn.")
+parser = argparse.ArgumentParser(description="Tutorial on spawning and interacting with an articulation.")
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
@@ -35,80 +34,107 @@ simulation_app = app_launcher.app
 
 import torch
 
+import omni.isaac.core.utils.prims as prim_utils
+
 import omni.isaac.lab.sim as sim_utils
-from omni.isaac.lab.assets import ArticulationCfg, AssetBaseCfg
-from omni.isaac.lab.scene import InteractiveScene, InteractiveSceneCfg
+from omni.isaac.lab.assets import Articulation
 from omni.isaac.lab.sim import SimulationContext
-from omni.isaac.lab.utils import configclass
 
 ##
 # Pre-defined configs
 ##
-from omni.isaac.lab_assets import CARTPOLE_CFG  # isort:skip
-from esther import ESTHER_CFG
+import omni.isaac.lab.sim as sim_utils
+from omni.isaac.lab.actuators import ImplicitActuatorCfg
+from omni.isaac.lab.assets import ArticulationCfg
+from omni.isaac.lab.utils.assets import ISAACLAB_NUCLEUS_DIR
+
+CARTPOLE_CFG = ArticulationCfg(
+    spawn=sim_utils.UsdFileCfg(
+        usd_path=f"{ISAACLAB_NUCLEUS_DIR}/Robots/Classic/Cartpole/cartpole.usd",
+        # rigid_props=sim_utils.RigidBodyPropertiesCfg(
+        #     rigid_body_enabled=True,
+        #     max_linear_velocity=1000.0,
+        #     max_angular_velocity=1000.0,
+        #     max_depenetration_velocity=100.0,
+        #     enable_gyroscopic_forces=True,
+        # ),
+        # articulation_props=sim_utils.ArticulationRootPropertiesCfg(
+        #     enabled_self_collisions=False,
+        #     solver_position_iteration_count=4,
+        #     solver_velocity_iteration_count=0,
+        #     sleep_threshold=0.005,
+        #     stabilization_threshold=0.001,
+        # ),
+    ),
+    init_state=ArticulationCfg.InitialStateCfg(
+        pos=(0.0, 0.0, 2.0), joint_pos={"slider_to_cart": 0.0, "cart_to_pole": 0.0}
+    ),
+    actuators={
+        "cart_actuator": ImplicitActuatorCfg(
+            joint_names_expr=["slider_to_cart"],
+            effort_limit=400.0,
+            velocity_limit=100.0,
+            stiffness=0.0,
+            damping=10.0,
+        ),
+        "pole_actuator": ImplicitActuatorCfg(
+            joint_names_expr=["cart_to_pole"], effort_limit=400.0, velocity_limit=100.0, stiffness=0.0, damping=0.0
+        ),
+    },
+)
+
+def design_scene() -> tuple[dict, list[list[float]]]:
+    """Designs the scene."""
+    # Ground-plane
+    cfg = sim_utils.GroundPlaneCfg()
+    cfg.func("/World/defaultGroundPlane", cfg)
+    # Lights
+    cfg = sim_utils.DomeLightCfg(intensity=3000.0, color=(0.75, 0.75, 0.75))
+    cfg.func("/World/Light", cfg)
+
+    # Create separate groups called "Origin1", "Origin2"
+    # Each group will have a robot in it
+    origins = [[0.0, 0.0, 0.0], [-1.0, 0.0, 0.0], [1.0, 0.0, 0.0]]
+    # Origin 1
+    prim_utils.create_prim("/World/Origin1", "Xform", translation=origins[0])
+    # Origin 2
+    prim_utils.create_prim("/World/Origin2", "Xform", translation=origins[1])
+    # Origin 3
+    prim_utils.create_prim("/World/Origin3", "Xform", translation=origins[2])
+
+    # Articulation
+    cartpole_cfg = CARTPOLE_CFG.copy()
+    cartpole_cfg.prim_path = "/World/Origin.*/Robot"
+    cartpole = Articulation(cfg=cartpole_cfg)
+
+    # return the scene information
+    scene_entities = {"cartpole": cartpole}
+    return scene_entities, origins
 
 
-@configclass
-class CartpoleSceneCfg(InteractiveSceneCfg):
-    """Configuration for a cart-pole scene."""
-
-    # ground plane
-    # ground = AssetBaseCfg(prim_path="/World/defaultGroundPlane", spawn=sim_utils.GroundPlaneCfg())
-
-    # lights
-    # dome_light = AssetBaseCfg(
-    #     prim_path="/World/Light", spawn=sim_utils.DomeLightCfg(intensity=3000.0, color=(0.75, 0.75, 0.75))
-    # )
-
-    # articulation
-    # cartpole: ArticulationCfg = CARTPOLE_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
-    esther: ArticulationCfg = ESTHER_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
-
-def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
+def run_simulator(sim: sim_utils.SimulationContext, entities: dict[str, Articulation], origins: torch.Tensor):
     """Runs the simulation loop."""
     # Extract scene entities
-    # note: we only do this here for readability.
-    robot = scene["esther"]
+    # note: we only do this here for readability. In general, it is better to access the entities directly from
+    #   the dictionary. This dictionary is replaced by the InteractiveScene class in the next tutorial.
+    robot = entities["cartpole"]
     # Define simulation stepping
     sim_dt = sim.get_physics_dt()
     count = 0
     # Simulation loop
     while simulation_app.is_running():
-        # Reset
-        if count % 500 == 0:
-            # reset counter
-            count = 0
-            # reset the scene entities
-            # root state
-            # we offset the root state by the origin since the states are written in simulation world frame
-            # if this is not done, then the robots will be spawned at the (0, 0, 0) of the simulation world
-
-            # root_state = robot.data.default_root_state.clone()
-            # root_state[:, :3] += scene.env_origins
-            # robot.write_root_link_pose_to_sim(root_state[:, :7])
-            # robot.write_root_com_velocity_to_sim(root_state[:, 7:])
-
-            # set joint positions with some noise
-            # joint_pos, joint_vel = robot.data.default_joint_pos.clone(), robot.data.default_joint_vel.clone()
-            # joint_pos += torch.rand_like(joint_pos) * 0.1
-            # robot.write_joint_state_to_sim(joint_pos, joint_vel)
-
-            # clear internal buffers
-            scene.reset()
-            print("[INFO]: Resetting robot state...")
+  
         # Apply random action
-        # -- generate random joint efforts
-        # efforts = torch.randn_like(robot.data.joint_pos) * 5.0
         # -- apply action to the robot
-        # robot.set_joint_effort_target(efforts)
-        # -- write data to sim
-        scene.write_data_to_sim()
+        robot.set_joint_velocity_target(torch.zeros((3,2), device=sim.device))
+        robot.write_data_to_sim()
+
         # Perform step
         sim.step()
         # Increment counter
         count += 1
         # Update buffers
-        scene.update(sim_dt)
+        robot.update(sim_dt)
 
 
 def main():
@@ -119,14 +145,14 @@ def main():
     # Set main camera
     sim.set_camera_view([2.5, 0.0, 4.0], [0.0, 0.0, 2.0])
     # Design scene
-    scene_cfg = CartpoleSceneCfg(num_envs=args_cli.num_envs, env_spacing=2.0)
-    scene = InteractiveScene(scene_cfg)
+    scene_entities, scene_origins = design_scene()
+    scene_origins = torch.tensor(scene_origins, device=sim.device)
     # Play the simulator
     sim.reset()
     # Now we are ready!
     print("[INFO]: Setup complete...")
     # Run the simulator
-    run_simulator(sim, scene)
+    run_simulator(sim, scene_entities, scene_origins)
 
 
 if __name__ == "__main__":
