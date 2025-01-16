@@ -48,9 +48,9 @@ from omni.isaac.lab.actuators import ImplicitActuatorCfg
 from omni.isaac.lab.assets import ArticulationCfg
 from omni.isaac.lab.utils.assets import ISAACLAB_NUCLEUS_DIR
 
-CARTPOLE_CFG = ArticulationCfg(
+ESTHER_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path=f"{ISAACLAB_NUCLEUS_DIR}/Robots/Classic/Cartpole/cartpole.usd",
+        usd_path=f"assets/WheeledTennisRobot-new/tennis_robot_base.usd",
         # rigid_props=sim_utils.RigidBodyPropertiesCfg(
         #     rigid_body_enabled=True,
         #     max_linear_velocity=1000.0,
@@ -67,19 +67,96 @@ CARTPOLE_CFG = ArticulationCfg(
         # ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 2.0), joint_pos={"slider_to_cart": 0.0, "cart_to_pole": 0.0}
+        pos=(0.0, 0.0, 0.0)
     ),
     actuators={
-        "cart_actuator": ImplicitActuatorCfg(
-            joint_names_expr=["slider_to_cart"],
-            effort_limit=400.0,
-            velocity_limit=100.0,
-            stiffness=0.0,
-            damping=10.0,
+        "Revolute_1": ImplicitActuatorCfg(
+            joint_names_expr=["Revolute_1"],
+            stiffness=None,
+            damping=None,
         ),
-        "pole_actuator": ImplicitActuatorCfg(
-            joint_names_expr=["cart_to_pole"], effort_limit=400.0, velocity_limit=100.0, stiffness=0.0, damping=0.0
+        "Revolute_2": ImplicitActuatorCfg(
+            joint_names_expr=["Revolute_2"],
+            stiffness=None,
+            damping=None,
         ),
+        "Revolute_3": ImplicitActuatorCfg(
+            joint_names_expr=["Revolute_3"],
+            stiffness=None,
+            damping=None,
+        ),
+        "Revolute_4": ImplicitActuatorCfg(
+            joint_names_expr=["Revolute_4"],
+            stiffness=None,
+            damping=None,
+        ),
+        "Revolute_5": ImplicitActuatorCfg(
+            joint_names_expr=["Revolute_5"],
+            stiffness=None,
+            damping=None,
+        ),
+        "Revolute_6": ImplicitActuatorCfg(
+            joint_names_expr=["Revolute_6"],
+            stiffness=None,
+            damping=None,
+        ),
+        # "Revolute_7": ImplicitActuatorCfg(
+        #     joint_names_expr=["Revolute_7"],
+        #     stiffness=None,
+        #     damping=None,
+        # ),
+        "Revolute_8": ImplicitActuatorCfg(
+            joint_names_expr=["Revolute_8"],
+            stiffness=None,
+            damping=None,
+        ),
+        "Revolute_9": ImplicitActuatorCfg(
+            joint_names_expr=["Revolute_9"],
+            stiffness=None,
+            damping=None,
+        ),
+        "passive1": ImplicitActuatorCfg(
+            joint_names_expr=["passive1"],
+            stiffness=None,
+            damping=None,
+        ),
+        "passive2": ImplicitActuatorCfg(
+            joint_names_expr=["passive2"],
+            stiffness=None,
+            damping=None,
+        ),
+        "passive3": ImplicitActuatorCfg(
+            joint_names_expr=["passive3"],
+            stiffness=None,
+            damping=None,
+        ),
+        "passive4": ImplicitActuatorCfg(
+            joint_names_expr=["passive4"],
+            stiffness=None,
+            damping=None,
+        ),
+        "passive5": ImplicitActuatorCfg(
+            joint_names_expr=["passive5"],
+            stiffness=None,
+            damping=None,
+        ),
+        "passive6": ImplicitActuatorCfg(
+            joint_names_expr=["passive6"],
+            stiffness=None,
+            damping=None,
+        ),
+
+
+        # "cart_actuator": ImplicitActuatorCfg(
+        #     joint_names_expr=["slider_to_cart"],
+        #     effort_limit=400.0,
+        #     velocity_limit=100.0,
+        #     stiffness=0.0,
+        #     damping=10.0,
+        # ),
+        # "pole_actuator": ImplicitActuatorCfg(
+        #     joint_names_expr=["cart_to_pole"], effort_limit=400.0, velocity_limit=100.0, stiffness=0.0, damping=0.0
+        # ),
     },
 )
 
@@ -92,23 +169,18 @@ def design_scene() -> tuple[dict, list[list[float]]]:
     cfg = sim_utils.DomeLightCfg(intensity=3000.0, color=(0.75, 0.75, 0.75))
     cfg.func("/World/Light", cfg)
 
-    # Create separate groups called "Origin1", "Origin2"
-    # Each group will have a robot in it
-    origins = [[0.0, 0.0, 0.0], [-1.0, 0.0, 0.0], [1.0, 0.0, 0.0]]
-    # Origin 1
-    prim_utils.create_prim("/World/Origin1", "Xform", translation=origins[0])
-    # Origin 2
-    prim_utils.create_prim("/World/Origin2", "Xform", translation=origins[1])
-    # Origin 3
-    prim_utils.create_prim("/World/Origin3", "Xform", translation=origins[2])
+    origins = [[0.0,0.0,-0.060], [10.0,0.0, -0.060]]
+    prim_utils.create_prim("/World/Origin1", "Xform", translation=origins[0], orientation=torch.tensor([1.0, 0.0, 0.0, 0.0]))
+    # prim_utils.create_prim("/World/Origin2", "Xform", translation=origins[1], orientation=torch.tensor([1.0, 0.0, 0.0, 0.0]))
+
 
     # Articulation
-    cartpole_cfg = CARTPOLE_CFG.copy()
-    cartpole_cfg.prim_path = "/World/Origin.*/Robot"
-    cartpole = Articulation(cfg=cartpole_cfg)
+    esther_cfg = ESTHER_CFG.copy()
+    esther_cfg.prim_path = "/World/Origin.*/Robot"
+    esther = Articulation(cfg=esther_cfg)
 
     # return the scene information
-    scene_entities = {"cartpole": cartpole}
+    scene_entities = {"esther": esther}
     return scene_entities, origins
 
 
@@ -117,7 +189,7 @@ def run_simulator(sim: sim_utils.SimulationContext, entities: dict[str, Articula
     # Extract scene entities
     # note: we only do this here for readability. In general, it is better to access the entities directly from
     #   the dictionary. This dictionary is replaced by the InteractiveScene class in the next tutorial.
-    robot = entities["cartpole"]
+    robot = entities["esther"]
     # Define simulation stepping
     sim_dt = sim.get_physics_dt()
     count = 0
@@ -126,7 +198,14 @@ def run_simulator(sim: sim_utils.SimulationContext, entities: dict[str, Articula
   
         # Apply random action
         # -- apply action to the robot
-        robot.set_joint_velocity_target(torch.zeros((3,2), device=sim.device))
+        # ['Revolute_8', 'Revolute_9', 'passive1', 'passive2', 'passive3', 'Revolute_1', 'passive4', 'passive5', 
+        # 'passive6', 'Revolute_2', 'Revolute_3', 'Revolute_4', 'Revolute_5', 'Revolute_6']
+        robot.set_joint_velocity_target(torch.zeros((14), device=sim.device))
+        robot.set_joint_velocity_target(torch.tensor([5.0, 0.0],device=sim.device),joint_ids=[0,1])
+
+        # robot.set_joint_velocity_target(torch.zeros((2, 14), device=sim.device))
+        # robot.set_joint_velocity_target(torch.tensor([[5.0, 0.0], [-5.0,0]],device=sim.device),joint_ids=[0,1])
+
         robot.write_data_to_sim()
 
         # Perform step
@@ -135,7 +214,8 @@ def run_simulator(sim: sim_utils.SimulationContext, entities: dict[str, Articula
         count += 1
         # Update buffers
         robot.update(sim_dt)
-
+        print(robot.root_physx_view.get_dof_velocities())
+1
 
 def main():
     """Main function."""

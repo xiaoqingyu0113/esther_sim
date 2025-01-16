@@ -91,6 +91,8 @@
         "${workspaceFolder}/../IsaacLab/source/extensions/omni.isaac.lab_assets",
         "${workspaceFolder}/../IsaacLab/source/extensions/omni.isaac.lab_tasks",
         "${workspaceFolder}/../IsaacLab/_isaac_sim/exts/omni.isaac.core",
+        "${workspaceFolder}/../IsaacLab/_isaac_sim/extsPhysics/omni.physics.tensors",
+        
         "${workspaceFolder}/../IsaacLab/_isaac_sim/kit/plugins/bindings-python",
         "${workspaceFolder}/../IsaacLab/_isaac_sim/kit/python/lib/python3.10/site-packages",
         "${workspaceFolder}/../IsaacLab/_isaac_sim/python_packages",
