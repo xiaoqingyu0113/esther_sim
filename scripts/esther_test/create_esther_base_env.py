@@ -51,10 +51,10 @@ from omni.isaac.lab.assets import Articulation, RigidObject
 
 ESTHER_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path=f"assets/WheeledTennisRobot-new/tennis_robot_base.usd"),
+        usd_path=f"/home/core-robotics/Documents/WheeledTennisRobot-new/tennis_robot_base.usd"),
 
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.0)
+        pos=(0.0, 0.0, 0.4)
     ),
     actuators={
         "Revolute_1": ImplicitActuatorCfg(
