@@ -32,6 +32,7 @@ simulation_app = app_launcher.app
 
 import math
 import torch
+import os
 
 import omni.isaac.lab.envs.mdp as mdp
 from omni.isaac.lab.envs import ManagerBasedEnv, ManagerBasedEnvCfg
@@ -49,9 +50,10 @@ from omni.isaac.lab.assets import ArticulationCfg
 from omni.isaac.lab.assets import Articulation, RigidObject
 
 
+
 ESTHER_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path=f"/home/core-robotics/Documents/WheeledTennisRobot-new/tennis_robot_base.usd"),
+        usd_path=os.path.abspath("assets/WheeledTennisRobot-new/tennis_robot_base.usd")),
 
     init_state=ArticulationCfg.InitialStateCfg(
         pos=(0.0, 0.0, 0.4)
@@ -241,16 +243,16 @@ def main():
             if count % 300 == 0:
                 count = 0
                 env.reset()
-                print("-" * 80)
-                print("[INFO]: Resetting environment...")
+                # print("-" * 80)
+                # print("[INFO]: Resetting environment...")
             # sample random actions
             
-            print(f"[actions]: {env.action_manager.action}")
+            # print(f"[actions]: {env.action_manager.action}")
 
             # step the environment
             obs, _ = env.step(actions)
             # print current orientation of pole
-            print("[Env 0]: joints: ", obs["policy"])
+            # print("[Env 0]: joints: ", obs["policy"])
             # update counter
             count += 1
 
