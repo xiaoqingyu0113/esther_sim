@@ -4,7 +4,15 @@ import omni.isaac.lab.envs.mdp as mdp
 
 @configclass
 class ActionsCfg:
-    """Action specifications for the environment."""
-    wheel_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=["Revolute_[8-9]"], scale=1.0)
-    arm_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=["Revolute_[1-6]"], scale=1.0)
+    
+    '''
+    wheel_vel:
+        Revolute_9: left wheel
+        Revolute_8: right wheel
+    arm_pos:
+        Revolute_[1-6]: arm joints
+    
+    '''
+    wheel_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=["Revolute_9", "Revolute_8"], scale=1.0,preserve_order=True)
+    arm_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=["Revolute_[1-6]"], scale=1.0, preserve_order=True)
     

@@ -29,16 +29,23 @@ app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app
 
 # start the simulator
+import time
 import torch
+import math
 import torch.nn.functional as F
-
 from omni.isaac.lab.envs import ManagerBasedEnv
+from omni.isaac.lab.utils.math import euler_xyz_from_quat
 from esther.env import EstherEnvCfg
+print('---------------------------------',args_cli.headless)
+
+if not args_cli.headless:
+    from omni.isaac.debug_draw import _debug_draw
+    debug_drawer = _debug_draw.acquire_debug_draw_interface()
 
 def prescribed_path():
     R = 5.0 # radius, m
     T = 10.0 # total time, sec
-
+        
     t = torch.linspace(0, T, 100)
     x = R * torch.sin(2 * torch.pi * t / T)
     y = R - R  *  torch.cos(2 * torch.pi * t / T)
@@ -67,6 +74,126 @@ def get_next_waypoint(stamped_path: torch.Tensor, t:float):
     
     return torch.tensor([x, y])
 
+def wait_awhile(env, action, duration= 3.0):
+    num_steps = int(duration / env.step_dt)
+    for _ in range(num_steps):
+        env.step(action)
+
+class PIDController:
+    def __init__(self, Kp=1.0, Ki=0.0, Kd=0.0, error_fn = None):
+        '''
+        error_fn use to calculate the error given the current state and the desired state
+
+        if not defined, the error is defined as the euclidean distance between the two states
+        '''
+        self.Kp = Kp
+        self.Ki = Ki
+        self.Kd = Kd
+
+        self.integral = 0.0
+        self.prev_error = 0.0
+
+        self.error_fn = lambda x, y: y-x if error_fn is None else error_fn(x, y)
+
+    
+    def compute_action(self, curr_states, des_states, dt):
+        
+        error = self.error_fn(curr_states, des_states)
+
+        proportional = self.Kp * error
+        self.integral += error * dt
+        integral = self.Ki * self.integral
+        
+        derivative = self.Kd * (error - self.prev_error) / dt
+        
+        control_action = proportional + integral + derivative
+        self.prev_error = error
+        
+        return control_action
+
+
+    
+class DiffController:
+    def __init__(self, r_wheel=0.310, l_wheel=0.658, th_wheel=torch.pi/6, max_speed_wheel=20):
+        '''
+        params:
+            r_wheel: radius of the wheel
+            l_wheel: distance between the wheels
+            th_wheel: angle of the wheel
+        '''
+        self.r_wheel = r_wheel
+        self.l_wheel = l_wheel
+        self.th_wheel = th_wheel
+        self.max_speed_wheel = max_speed_wheel # rad/s
+
+        self.v_controller = PIDController(Kp=1.0, Ki=0.1, Kd=0.001, error_fn = None)
+        self.w_controller = PIDController(Kp=5.0, Ki=0.2, Kd=0.001, error_fn = None)
+
+    def cmd_vel_to_wheel_vel(self, v, w):
+        '''
+        convert the linear velocity and angular velocity to the left and right wheel angular velocity
+        '''
+        w_l = (v - w *self.l_wheel/2 - w * self.r_wheel*math.sin(self.th_wheel)) / self.r_wheel
+        w_r = (v + w *self.l_wheel/2 + w * self.r_wheel*math.sin(self.th_wheel)) / self.r_wheel
+
+        # clip 
+        norm = torch.sqrt(w_l**2 + w_r**2)
+        if norm > self.max_speed_wheel:
+            w_l = w_l / norm * self.max_speed_wheel
+            w_r = w_r / norm * self.max_speed_wheel
+
+        return w_l, w_r
+    
+    def wheel_vel_to_cmd_vel(self, w_l, w_r):
+        '''
+        convert the left and right wheel angular velocity to the linear velocity and angular velocity
+        '''
+        v = (w_l + w_r) / 2 * self.r_wheel 
+        w = (w_r - w_l) / (self.l_wheel + 2*self.r_wheel*math.sin(self.th_wheel)) * self.r_wheel
+
+        return v, w
+    
+
+    def compute_action(self, odom, next_waypoint, dt):
+        xy_curr = odom[0,0:2]
+        theta_curr = euler_xyz_from_quat(odom[:, 3:7])[2]  
+        xy_desired = next_waypoint[0]
+        theta_desired = torch.atan2(xy_desired[1] - xy_curr[1], xy_desired[0] - xy_curr[0])
+
+        print('xy_curr:', xy_curr)
+        print('xy_desired:', xy_desired)
+        print('theta_curr:', theta_curr)
+        print('theta_desired:', theta_desired)
+
+        def angle_diff(a, b):
+            return (a - b + torch.pi) % (2 * torch.pi) - torch.pi # [-pi, pi]
+            
+
+
+        err_angle = angle_diff(theta_desired, theta_curr)
+        if abs(err_angle) > math.pi/2:
+            err_pos = -torch.linalg.norm(xy_desired - xy_curr)
+        else:
+            err_pos = torch.linalg.norm(xy_desired - xy_curr)
+
+        print('err_pos:', err_pos)
+        print('err_angle:', err_angle)
+
+        cmd_v = self.v_controller.compute_action(0, err_pos, dt)
+        cmd_w = self.w_controller.compute_action(0, angle_diff(theta_desired, theta_curr), dt)
+
+        print('cmd_v:', cmd_v)
+        print('cmd_w:', cmd_w)
+
+        w_l, w_r = self.cmd_vel_to_wheel_vel(cmd_v, cmd_w)
+
+        # clip
+        w_l = torch.clip(w_l, -self.max_speed_wheel, self.max_speed_wheel)
+        w_r = torch.clip(w_r, -self.max_speed_wheel, self.max_speed_wheel)
+
+        return w_l, w_r
+
+    
 
 def main():
     """Main function."""
@@ -78,29 +205,32 @@ def main():
 
     # simulate physics
     curr_time = 0.0
-    actions = torch.zeros_like(env.action_manager.action, device=env.device)
+    action = torch.zeros_like(env.action_manager.action, device=env.device)
     stamped_path = prescribed_path()
 
-    # For a true PD controller, track previous error (same shape as error).
-    prev_error_xy = None
 
-    # Example gains (tune to your scenario)
-    Kp_dist = 1.0       # Proportional gain for distance
-    Kp_head = 0      # Proportional gain for heading
-    Kd_dist = 0.1       # Derivative gain for distance
-    Kd_head = 0     # Derivative gain for heading
+    # draw prescribed path
+    if not args_cli.headless:
+        to_draw = torch.stack([stamped_path[:,1], stamped_path[:,2], torch.ones(len(stamped_path))*0.05], dim=1)
+        debug_drawer.draw_lines_spline(to_draw.tolist(), (0,1,0,1), 5, False)
 
-    # Baseline (distance) between the two wheels, needed to convert (v, w) -> (v_left, v_right)
-    # If you have a known track width or half-baseline, adjust accordingly.
-    baseline = 0.4
+    # init controller
+    controller = DiffController()
 
+    wait_awhile(env, action, duration=3.0)
+
+    action[:,0:2] = torch.tensor([10,4], device=env.device)
     while simulation_app.is_running():
+        # wait for a while to stable the initial dynamics
+
         with torch.inference_mode():
-            obs, _ = env.step(actions)
+            obs, _ = env.step(action)
             curr_time += env.step_dt
 
+
+
             # get the current states
-            odom = obs["policy"]['odom'][:, :3]      # [x, y, theta] per environment
+            odom = obs["policy"]['odom'][:, :7]      # [x, y, z, quat] per environment
             wheel_vel = obs["policy"]['vel'][:, :2]  # left, right wheel velocities
             arm_vel = obs["policy"]['vel'][:, 2:]
             arm_pos = obs["policy"]['pos']
@@ -108,76 +238,33 @@ def main():
             # get the next waypoint (shape [num_envs, 3] or at least [num_envs, 2])
             next_waypoint = get_next_waypoint(stamped_path, curr_time)[None, ...].to(env.device)
 
-            # calculate the position/heading error in the XY plane
-            # ----------------------------------------------------
-            # Position error in x and y (ignoring z for differential drive)
-            print(f"Next waypoint: {next_waypoint}")
-            print(f"Odom: {odom}")
-            error_xy = next_waypoint[:, 0:2] - odom[:, 0:2]
-            distance_error = torch.norm(error_xy, dim=-1)  # scalar distance to waypoint
+            # compute the control action
+            w_l, w_r = controller.compute_action(odom, next_waypoint, env.step_dt)
+            action[:,0:2] = torch.stack([w_l, w_r], dim=1)
 
-            # Current heading (robot orientation) assumed to be odom[:, 2]
-            current_heading = odom[:, 2]
+            # draw the next waypoint arg0: List[carb._carb.Float3], arg1: List[carb._carb.ColorRgba], arg2: List[float]
+            # if args_cli contains --headless
+            if not args_cli.headless:
+                points = next_waypoint.cpu().tolist()
+                points[0].append(0.06)
+                colors = [[1,0,0,1]]
+                size = [10.0]
+                debug_drawer.draw_points(points, colors, size)
+           
+            
+            print('odom:', odom)
+            print('next waypoint:', next_waypoint)
+            # print('wheel vel:', wheel_vel)
+            # v, w = controller.wheel_vel_to_cmd_vel(10,4)
+            # w_l, w_r = controller.cmd_vel_to_wheel_vel(v, w)
+            # print('root vel:', torch.linalg.norm(obs["policy"]['odom'][0, 7:10]))
+            # print('kine vel:', v)
+            # print('root ang vel:', obs["policy"]['odom'][0, 10:13])
+            # print('kine ang vel:', w)
+            print('wheel vel:', [w_l, w_r])
+            # time.sleep(0.1)
 
-            # Desired heading is the angle from current (x,y) to the waypoint
-            desired_heading = torch.atan2(error_xy[:, 1], error_xy[:, 0])
 
-            # Heading error: difference between desired_heading and current_heading
-            heading_error = desired_heading - current_heading
-
-            # Wrap heading error to [-pi, pi]
-            heading_error = torch.atan2(torch.sin(heading_error), torch.cos(heading_error))
-
-  
-
-            # ----------------------------------------------------
-            # Optional: Derivative term (PD), if desired
-            # We only do derivative in the distance error & heading error.
-            # If prev_error_xy is None, we have no derivative info yet.
-            # ----------------------------------------------------
-            dist_deriv = torch.zeros_like(distance_error)
-            head_deriv = torch.zeros_like(heading_error)
-
-            if prev_error_xy is not None:
-                # previous distance error
-                prev_distance_error = torch.norm(prev_error_xy, dim=-1)
-
-                # distance derivative
-                dist_deriv = (distance_error - prev_distance_error) / env.step_dt
-
-                # heading derivative
-                # We do the same trick for heading (but watch out for wrap-around).
-                # A quick way is just to re-compute heading errors from the prev vector:
-                # However, you might also have stored prev_heading_error explicitly.
-                # Here, we assume same approach:
-                #   heading_error(t) = desired_heading - current_heading
-                #   heading_error(t-1) = desired_heading_prev - current_heading_prev
-                # For simplicity, let's define heading derivative as:
-                head_deriv = (heading_error - prev_heading_error) / env.step_dt
-
-            # Store current for next iteration
-            prev_error_xy = error_xy.clone()
-            prev_heading_error = heading_error.clone()
-
-            # ----------------------------------------------------
-            # PD control
-            # ----------------------------------------------------
-            # Linear velocity command
-            v_cmd = (Kp_dist * distance_error) + (Kd_dist * dist_deriv)
-            # Angular velocity command
-            w_cmd = (Kp_head * heading_error) + (Kd_head * head_deriv)
-
-            # Convert (v, w) into left/right wheel velocities
-            # v_left  = v - (w * baseline / 2)
-            # v_right = v + (w * baseline / 2)
-            # For vector operations, shape is [num_envs]
-            left_vel = v_cmd - 0.5 * baseline * w_cmd
-            right_vel = v_cmd + 0.5 * baseline * w_cmd
-
-            # Now place these into the actions tensor
-            # actions shape = [num_envs, 2] => (left_wheel, right_wheel)
-            actions[:, 0] = left_vel
-            actions[:, 1] = right_vel
 
     env.close()
     simulation_app.close()

@@ -96,5 +96,7 @@
         "${workspaceFolder}/../IsaacLab/_isaac_sim/kit/plugins/bindings-python",
         "${workspaceFolder}/../IsaacLab/_isaac_sim/kit/python/lib/python3.10/site-packages",
         "${workspaceFolder}/../IsaacLab/_isaac_sim/python_packages",
+        "${workspaceFolder}/../.local/share/ov/pkg/isaac-sim-4.2.0/exts/omni.isaac.ml_archive/pip_prebundle/",
+        "{workspaceFolder}/../.local/share/ov/pkg/isaac-sim-4.2.0/exts/omni.isaac.debug_draw/omni.isaac.debug_draw"
     ]
 }

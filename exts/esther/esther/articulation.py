@@ -25,7 +25,7 @@ ESTHER_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
         usd_path=os.path.abspath("assets/WheeledTennisRobot-new/tennis_robot_base.usd")),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.4)
+        pos=(0.0, 0.0, 0.3852)
     ),
     actuators={
         "Revolute_1": ImplicitActuatorCfg(
@@ -61,12 +61,12 @@ ESTHER_CFG = ArticulationCfg(
         "Revolute_8": ImplicitActuatorCfg(
             joint_names_expr=["Revolute_8"],
             stiffness=0,
-            damping=600,
+            damping=3000,
         ),
         "Revolute_9": ImplicitActuatorCfg(
             joint_names_expr=["Revolute_9"],
             stiffness=0,
-            damping=600,
+            damping=3000,
         ),
         "passive1": ImplicitActuatorCfg(
             joint_names_expr=["passive1"],

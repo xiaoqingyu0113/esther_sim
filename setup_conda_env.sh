@@ -1,0 +1,1 @@
+cd $ISAACSIM_PATH && source setup_conda_env.sh && cd -

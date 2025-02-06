@@ -14,7 +14,7 @@ class EstherEnvCfg(ManagerBasedEnvCfg):
         pass
 
     # Scene settings
-    scene = EstherSceneCfg(num_envs=2, env_spacing=2.5)
+    scene = EstherSceneCfg(num_envs=1, env_spacing=2.5)
     # Basic settings
     observations = ObservationsCfg()
     actions = ActionsCfg()
