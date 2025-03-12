@@ -32,14 +32,14 @@ class ObservationsCfg:
         "pos" : joint positions
         "odom" : robot base odometry in world frame [pos, quat, lin_vel, ang_vel]
         """
-        vel = ObsTerm(func=lambda env, asset_cfg = SceneEntityCfg("robot"):
-                      env.scene[asset_cfg.name].data.joint_vel[:, [0, 1, 5, 9, 10, 11, 12, 13]])
+        # vel = ObsTerm(func=lambda env, asset_cfg = SceneEntityCfg("robot"):
+        #               env.scene[asset_cfg.name].data.joint_vel[:, [0, 1, 5, 9, 10, 11, 12, 13]])
         
-        pos = ObsTerm(func=lambda env, asset_cfg = SceneEntityCfg("robot"):
-                      env.scene[asset_cfg.name].data.joint_vel[:, [5, 9, 10, 11, 12, 13]])
+        # pos = ObsTerm(func=lambda env, asset_cfg = SceneEntityCfg("robot"):
+        #               env.scene[asset_cfg.name].data.joint_vel[:, [5, 9, 10, 11, 12, 13]])
         
-        odom = ObsTerm(func=lambda env, asset_cfg = SceneEntityCfg("robot"):
-                       env.scene[asset_cfg.name].data.root_state_w)
+        # odom = ObsTerm(func=lambda env, asset_cfg = SceneEntityCfg("robot"):
+        #                env.scene[asset_cfg.name].data.root_state_w)
         
 
         def __post_init__(self) -> None:

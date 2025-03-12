@@ -23,80 +23,76 @@ For ESTHER_CFG, we have the following:
 '''
 ESTHER_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path=os.path.abspath("assets/WheeledTennisRobot-new/tennis_robot_base.usd")),
+        usd_path=os.path.abspath("~/varshith_lab/source/extensions/esther/assets/wheelchair_tennis/wtr/wtr.usd")),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.3852)
+        pos=(0.0, 0.0, 0.0)
     ),
     actuators={
-        "Revolute_1": ImplicitActuatorCfg(
-            joint_names_expr=["Revolute_1"],
+        "j1": ImplicitActuatorCfg(
+            joint_names_expr=["j1"],
             stiffness=3000,
             damping=10,
         ),
-        "Revolute_2": ImplicitActuatorCfg(
-            joint_names_expr=["Revolute_2"],
+        "j2": ImplicitActuatorCfg(
+            joint_names_expr=["j2"],
             stiffness=3000,
             damping=10,
         ),
-        "Revolute_3": ImplicitActuatorCfg(
-            joint_names_expr=["Revolute_3"],
+        "j3": ImplicitActuatorCfg(
+            joint_names_expr=["j3"],
             stiffness=3000,
             damping=10,
         ),
-        "Revolute_4": ImplicitActuatorCfg(
-            joint_names_expr=["Revolute_4"],
+        "j4": ImplicitActuatorCfg(
+            joint_names_expr=["j4"],
             stiffness=3000,
             damping=10,
         ),
-        "Revolute_5": ImplicitActuatorCfg(
-            joint_names_expr=["Revolute_5"],
+        "j5": ImplicitActuatorCfg(
+            joint_names_expr=["j5"],
             stiffness=3000,
             damping=10,
         ),
-        "Revolute_6": ImplicitActuatorCfg(
-            joint_names_expr=["Revolute_6"],
+        "j6": ImplicitActuatorCfg(
+            joint_names_expr=["j6"],
             stiffness=3000,
             damping=10,
         ),
-        "Revolute_8": ImplicitActuatorCfg(
-            joint_names_expr=["Revolute_8"],
+         "j7": ImplicitActuatorCfg(
+            joint_names_expr=["j7"],
+            stiffness=3000,
+            damping=10,
+        ),
+        "wheel_joint_1": ImplicitActuatorCfg(
+            joint_names_expr=["wheel_joint_1"],
             stiffness=0,
             damping=3000,
         ),
-        "Revolute_9": ImplicitActuatorCfg(
-            joint_names_expr=["Revolute_9"],
+        "wheel_joint_2": ImplicitActuatorCfg(
+            joint_names_expr=["wheel_joint_2"],
             stiffness=0,
             damping=3000,
         ),
-        "passive1": ImplicitActuatorCfg(
-            joint_names_expr=["passive1"],
+        "sw_joint_1": ImplicitActuatorCfg(
+            joint_names_expr=["sw_joint_1"],
             stiffness=0,
             damping=0,
         ),
-        "passive2": ImplicitActuatorCfg(
-            joint_names_expr=["passive2"],
+        "sw_joint_2": ImplicitActuatorCfg(
+            joint_names_expr=["sw_joint_2"],
             stiffness=0,
             damping=0,
         ),
-        "passive3": ImplicitActuatorCfg(
-            joint_names_expr=["passive3"],
+        "sw_joint_3": ImplicitActuatorCfg(
+            joint_names_expr=["sw_joint_3"],
             stiffness=0,
             damping=0,
         ),
-        "passive4": ImplicitActuatorCfg(
-            joint_names_expr=["passive4"],
+        "racquet_joint": ImplicitActuatorCfg(
+            joint_names_expr=["racquet_joint"],
             stiffness=0,
             damping=0,
         ),
-        "passive5": ImplicitActuatorCfg(
-            joint_names_expr=["passive5"],
-            stiffness=0,
-            damping=0,
-        ),
-        "passive6": ImplicitActuatorCfg(
-            joint_names_expr=["passive6"],
-            stiffness=0,
-            damping=0,
-        ),
+       
     },
 )
