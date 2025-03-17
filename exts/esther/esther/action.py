@@ -4,15 +4,14 @@ import omni.isaac.lab.envs.mdp as mdp
 
 @configclass
 class ActionsCfg:
+    '''
+    In env.action_manager.action, the shape is [num_envs, num_actions].
+
+        - num_envs: Number of environments to spawn.
+        - num_actions: wheel_vel [0-1], arm_pos [2-6]
+    
     
     '''
-    wheel_vel:
-        Revolute_9: left wheel
-        Revolute_8: right wheel
-    arm_pos:
-        Revolute_[1-6]: arm joints
-    
-    '''
-    wheel_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=["Revolute_9", "Revolute_8"], scale=1.0,preserve_order=True)
-    arm_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=["Revolute_[1-6]"], scale=1.0, preserve_order=True)
+    wheel_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names="wheel_joint_[1-2]", scale=1.0,preserve_order=True)
+    arm_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=["j[1-5]"], scale=1.0, preserve_order=True)
     

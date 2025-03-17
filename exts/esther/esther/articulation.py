@@ -23,55 +23,53 @@ For ESTHER_CFG, we have the following:
 '''
 ESTHER_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path=os.path.abspath("~/varshith_lab/source/extensions/esther/assets/wheelchair_tennis/wtr/wtr.usd")),
+        usd_path=os.path.abspath("/home/qingyu/varshith_lab/source/extensions/esther/assets/wheelchair_tennis/wtr/wtr.usd")),
     init_state=ArticulationCfg.InitialStateCfg(
         pos=(0.0, 0.0, 0.0)
     ),
     actuators={
         "j1": ImplicitActuatorCfg(
             joint_names_expr=["j1"],
-            stiffness=3000,
+            effort_limit=100,
+            stiffness=300,
             damping=10,
         ),
         "j2": ImplicitActuatorCfg(
             joint_names_expr=["j2"],
-            stiffness=3000,
+            effort_limit=100,
+            stiffness=300,
             damping=10,
         ),
         "j3": ImplicitActuatorCfg(
             joint_names_expr=["j3"],
-            stiffness=3000,
+            effort_limit=100,
+            stiffness=300,
             damping=10,
         ),
         "j4": ImplicitActuatorCfg(
             joint_names_expr=["j4"],
-            stiffness=3000,
+            effort_limit=100,
+            stiffness=300,
             damping=10,
         ),
         "j5": ImplicitActuatorCfg(
             joint_names_expr=["j5"],
-            stiffness=3000,
+            effort_limit=100,
+            stiffness=300,
             damping=10,
         ),
-        "j6": ImplicitActuatorCfg(
-            joint_names_expr=["j6"],
-            stiffness=3000,
-            damping=10,
-        ),
-         "j7": ImplicitActuatorCfg(
-            joint_names_expr=["j7"],
-            stiffness=3000,
-            damping=10,
-        ),
+    
         "wheel_joint_1": ImplicitActuatorCfg(
             joint_names_expr=["wheel_joint_1"],
+            effort_limit=100,
             stiffness=0,
-            damping=3000,
+            damping=300,
         ),
         "wheel_joint_2": ImplicitActuatorCfg(
             joint_names_expr=["wheel_joint_2"],
+            effort_limit=100,
             stiffness=0,
-            damping=3000,
+            damping=300,
         ),
         "sw_joint_1": ImplicitActuatorCfg(
             joint_names_expr=["sw_joint_1"],
@@ -88,11 +86,7 @@ ESTHER_CFG = ArticulationCfg(
             stiffness=0,
             damping=0,
         ),
-        "racquet_joint": ImplicitActuatorCfg(
-            joint_names_expr=["racquet_joint"],
-            stiffness=0,
-            damping=0,
-        ),
+   
        
     },
 )

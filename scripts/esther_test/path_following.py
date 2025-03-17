@@ -30,6 +30,7 @@ simulation_app = app_launcher.app
 
 # start the simulator
 import time
+import csv
 import torch
 import math
 import torch.nn.functional as F
@@ -114,7 +115,7 @@ class PIDController:
 
     
 class DiffController:
-    def __init__(self, r_wheel=0.310, l_wheel=0.658, th_wheel=torch.pi/6, max_speed_wheel=20):
+    def __init__(self, r_wheel=0.320, l_wheel=0.690, th_wheel=20/180*torch.pi, max_speed_wheel=20):
         '''
         params:
             r_wheel: radius of the wheel
@@ -126,8 +127,8 @@ class DiffController:
         self.th_wheel = th_wheel
         self.max_speed_wheel = max_speed_wheel # rad/s
 
-        self.v_controller = PIDController(Kp=1.0, Ki=0.1, Kd=0.001, error_fn = None)
-        self.w_controller = PIDController(Kp=5.0, Ki=0.2, Kd=0.001, error_fn = None)
+        self.v_controller = PIDController(Kp=3.0, Ki=0.1, Kd=0.001, error_fn = None)
+        self.w_controller = PIDController(Kp=30.0, Ki=0.2, Kd=0.001, error_fn = None)
 
     def cmd_vel_to_wheel_vel(self, v, w):
         '''
@@ -219,6 +220,11 @@ def main():
 
     wait_awhile(env, action, duration=3.0)
 
+    waypoint_csv = open('waypoint.csv', 'a', newline="")
+    waypoint_writer = csv.writer(waypoint_csv)
+    odom_csv = open('odom.csv', 'a', newline="")
+    odom_writer = csv.writer(odom_csv)
+
     action[:,0:2] = torch.tensor([10,4], device=env.device)
     while simulation_app.is_running():
         # wait for a while to stable the initial dynamics
@@ -251,7 +257,10 @@ def main():
                 size = [10.0]
                 debug_drawer.draw_points(points, colors, size)
            
-            
+
+            odom_writer.writerow(odom[0,:].cpu().tolist())
+            waypoint_writer.writerow(get_next_waypoint(stamped_path, curr_time - env.step_dt).cpu().tolist())
+
             print('odom:', odom)
             print('next waypoint:', next_waypoint)
             # print('wheel vel:', wheel_vel)
@@ -268,7 +277,8 @@ def main():
 
     env.close()
     simulation_app.close()
-
+    waypoint_csv.close()
+    odom_csv.close()
 
 if __name__ == "__main__":
     main()
