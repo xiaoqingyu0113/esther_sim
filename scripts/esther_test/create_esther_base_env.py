@@ -46,7 +46,7 @@ def main():
     # simulate physics
     count = 0
     actions = torch.zeros_like(env.action_manager.action, device=env.device)
-    actions[:, 0:2] = torch.tensor([0, 0], device=env.device)
+    actions[:, 0:2] = torch.tensor([0.1, 0.1], device=env.device)
     while simulation_app.is_running():
         with torch.inference_mode():
             obs, _ = env.step(actions)
