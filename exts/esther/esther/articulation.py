@@ -61,15 +61,15 @@ ESTHER_CFG = ArticulationCfg(
     
         "wheel_joint_1": ImplicitActuatorCfg(
             joint_names_expr=["wheel_joint_1"],
-            effort_limit=100,
+            effort_limit=1000000000,
             stiffness=0,
-            damping=1000,
+            damping=50000,
         ),
         "wheel_joint_2": ImplicitActuatorCfg(
             joint_names_expr=["wheel_joint_2"],
-            effort_limit=100,
+            effort_limit=1000000000,
             stiffness=0,
-            damping=1000,
+            damping=50000,
         ),
         "sw_joint_1": ImplicitActuatorCfg(
             joint_names_expr=["sw_joint_1"],

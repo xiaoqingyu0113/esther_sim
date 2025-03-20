@@ -50,7 +50,7 @@ def main():
     while simulation_app.is_running():
         with torch.inference_mode():
             obs, _ = env.step(actions)
-            print("[Env]: joints: ", obs["policy"])
+            print("[Env]: joints: ", obs["policy"]['vel'][0,-2:])
             count += 1
     env.close()
 

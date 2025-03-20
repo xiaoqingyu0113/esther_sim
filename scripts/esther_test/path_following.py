@@ -138,7 +138,7 @@ class DiffController:
         w_r = (v + w *self.l_wheel/2 + w * self.r_wheel*math.sin(self.th_wheel)) / self.r_wheel
 
         # clip 
-        norm = torch.sqrt(w_l**2 + w_r**2)
+        norm = torch.sqrt(torch.tensor(w_l**2 + w_r**2))
         if norm > self.max_speed_wheel:
             w_l = w_l / norm * self.max_speed_wheel
             w_r = w_r / norm * self.max_speed_wheel
@@ -220,10 +220,10 @@ def main():
 
     wait_awhile(env, action, duration=3.0)
 
-    waypoint_csv = open('waypoint.csv', 'a', newline="")
-    waypoint_writer = csv.writer(waypoint_csv)
-    odom_csv = open('odom.csv', 'a', newline="")
-    odom_writer = csv.writer(odom_csv)
+    # waypoint_csv = open('waypoint.csv', 'a', newline="")
+    # waypoint_writer = csv.writer(waypoint_csv)
+    # odom_csv = open('odom.csv', 'a', newline="")
+    # odom_writer = csv.writer(odom_csv)
 
     action[:,0:2] = torch.tensor([10,4], device=env.device)
     while simulation_app.is_running():
@@ -246,7 +246,10 @@ def main():
 
             # compute the control action
             w_l, w_r = controller.compute_action(odom, next_waypoint, env.step_dt)
-            action[:,0:2] = torch.stack([w_l, w_r], dim=1)
+            # action[:,0:2] = torch.stack([w_l, w_r], dim=1)
+
+            set_wheel  = [10, 4]
+            action[:,0:2] = torch.tensor(set_wheel, device=env.device)
 
             # draw the next waypoint arg0: List[carb._carb.Float3], arg1: List[carb._carb.ColorRgba], arg2: List[float]
             # if args_cli contains --headless
@@ -258,18 +261,18 @@ def main():
                 debug_drawer.draw_points(points, colors, size)
            
 
-            odom_writer.writerow(odom[0,:].cpu().tolist())
-            waypoint_writer.writerow(get_next_waypoint(stamped_path, curr_time - env.step_dt).cpu().tolist())
+            # odom_writer.writerow(odom[0,:].cpu().tolist())
+            # waypoint_writer.writerow(get_next_waypoint(stamped_path, curr_time - env.step_dt).cpu().tolist())
 
             print('odom:', odom)
             print('next waypoint:', next_waypoint)
             # print('wheel vel:', wheel_vel)
-            # v, w = controller.wheel_vel_to_cmd_vel(10,4)
-            # w_l, w_r = controller.cmd_vel_to_wheel_vel(v, w)
-            # print('root vel:', torch.linalg.norm(obs["policy"]['odom'][0, 7:10]))
-            # print('kine vel:', v)
-            # print('root ang vel:', obs["policy"]['odom'][0, 10:13])
-            # print('kine ang vel:', w)
+            v, w = controller.wheel_vel_to_cmd_vel(*set_wheel)
+            w_l, w_r = controller.cmd_vel_to_wheel_vel(v, w)
+            print('root vel:', torch.linalg.norm(obs["policy"]['odom'][0, 7:10]))
+            print('kine vel:', v)
+            print('root ang vel:', obs["policy"]['odom'][0, 10:13])
+            print('kine ang vel:', w)
             print('wheel vel:', [w_l, w_r])
             # time.sleep(0.1)
 
@@ -277,8 +280,8 @@ def main():
 
     env.close()
     simulation_app.close()
-    waypoint_csv.close()
-    odom_csv.close()
+    # waypoint_csv.close()
+    # odom_csv.close()
 
 if __name__ == "__main__":
     main()
