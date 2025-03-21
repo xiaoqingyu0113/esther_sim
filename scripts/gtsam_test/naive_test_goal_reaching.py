@@ -41,8 +41,8 @@ class EstherController(WheelOnlyController):
 controller = EstherController()
 
 # start = np.array([1.11403875e-04 ,1.84215605e-06, 1.40647126e-05])
-start = np.array([0.00451778, 0.00015795, 0.03419423])
-v_start = np.array([-0.3211078262329102, -0.17912851543105032])
+start = np.array([-0.0158763 ,  0.00099092 ,-0.04902387])
+v_start = np.array([0.02187854766845703, 1.1024384196366346])
 # v_start = np.array([0, 0])
 goal = np.array([5, 5, 0])
 v_goal = np.array([0, 0])

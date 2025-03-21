@@ -23,10 +23,10 @@ For ESTHER_CFG, we have the following:
 '''
 ESTHER_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path=os.path.abspath("/home/qingyu/varshith_lab/source/extensions/esther/assets/wheelchair_tennis/wtr/wtr.usd")),
-    init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.0)
-    ),
+        usd_path=os.path.abspath(os.path.expanduser("~/varshith_lab/source/extensions/esther/assets/wheelchair_tennis/wtr/wtr.usd"))),
+        init_state=ArticulationCfg.InitialStateCfg(
+                        pos=(0.0, 0.0, 0.0)
+                    ),
     actuators={
         "j1": ImplicitActuatorCfg(
             joint_names_expr=["j1"],

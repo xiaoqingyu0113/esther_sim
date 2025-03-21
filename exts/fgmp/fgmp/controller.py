@@ -5,13 +5,14 @@ from fgmp.factors import PriorFactor, DynFactor, VPriorFactor, VBetweenFactor
 
 
 class WheelOnlyController:
-    def __init__(self, N = 50):
+    def __init__(self, N = 100):
         self.N = N
-        self.dyn_noise = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.001, 0.001, 0.001]))
-        self.v_prior_noise = gtsam.noiseModel.Diagonal.Sigmas(np.array([1, 1]))
-        self.v_between_noise = gtsam.noiseModel.Diagonal.Sigmas(np.array([100, 100]))
-        self.constraint_noise3 = gtsam.noiseModel.Diagonal.Sigmas(np.ones(3)*1e-5)
-        self.constraint_noise2 = gtsam.noiseModel.Diagonal.Sigmas(np.ones(2)*1e-5)
+        self.dyn_noise = gtsam.noiseModel.Diagonal.Sigmas(np.ones(3)*8e-4)
+        self.v_prior_noise = gtsam.noiseModel.Diagonal.Sigmas(np.array([10, 10]))
+        self.v_between_noise = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.05, 3]))
+        self.x_prior_noise = gtsam.noiseModel.Diagonal.Sigmas(np.ones(3)*2e-1)
+        self.constraint_noise3 = gtsam.noiseModel.Diagonal.Sigmas(np.ones(3)*1e-6)
+        self.constraint_noise2 = gtsam.noiseModel.Diagonal.Sigmas(np.ones(2)*1e-1)
 
     def cmd2wheel(self, cmd):
         '''
@@ -63,6 +64,7 @@ class WheelOnlyController:
         for i in range(self.N-1):
             graph.push_back(DynFactor(self.dyn_noise, X(i), V(i+1), X(i+1), 0, dt))
             graph.push_back(VPriorFactor(self.v_prior_noise, V(i+1), np.array([0.0, 0.0])))
+            graph.push_back(PriorFactor(self.x_prior_noise, X(i), (goal-start)/(self.N-1)*i + start))
             if i < self.N-2:
                 graph.push_back(VBetweenFactor(self.v_between_noise, V(i), V(i+1)))
 

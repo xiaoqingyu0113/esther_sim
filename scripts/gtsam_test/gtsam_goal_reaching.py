@@ -145,7 +145,7 @@ def main():
         start = np.array([start_xy[0,0], start_xy[0,1], start_th[0]])
 
         v_start = controller.wheel2cmd(wheel_vel[0].cpu().numpy())
-        goal = np.array([-5.0, 5.0, 0])
+        goal = np.array([5.0, 5.0, 0])
         v_goal = np.array([0.0, 0.0])
         
         print('start: ', start)
@@ -155,10 +155,10 @@ def main():
         print('goal_reaching_duration: ', goal_reaching_duration - curr_time)
 
         
-        result = controller.inference(start, v_start, goal, v_goal, goal_reaching_duration - curr_time , initial_estimate=result)
+        result = controller.inference(start, v_start, goal, v_goal, goal_reaching_duration - curr_time , initial_estimate=None)
         velocities = controller.get_velocity(result)
         graph_times = np.linspace(0, goal_reaching_duration - curr_time, controller.N)
-        next_velocity_id = 5
+        next_velocity_id = 0
         wl, wr = controller.cmd2wheel(velocities[next_velocity_id])
 
 
