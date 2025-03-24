@@ -121,7 +121,8 @@ def main():
     _wait_awhile(env, action, duration=1.0)
 
     result = None
-    goal_reaching_duration = 20.0
+    goal_reaching_duration = 30.0
+    execute_action_time = -1
     while simulation_app.is_running():
         # wait for a while to stable the initial dynamics
 
@@ -154,13 +155,19 @@ def main():
         print('v_goal: ', v_goal)
         print('goal_reaching_duration: ', goal_reaching_duration - curr_time)
 
-        
-        result = controller.inference(start, v_start, goal, v_goal, goal_reaching_duration - curr_time , initial_estimate=None)
-        velocities = controller.get_velocity(result)
-        graph_times = np.linspace(0, goal_reaching_duration - curr_time, controller.N)
-        next_velocity_id = 0
-        wl, wr = controller.cmd2wheel(velocities[next_velocity_id])
+        time_scale = 4.0
+        if execute_action_time <= 0:
+            result = controller.inference(start, v_start, goal, v_goal, (goal_reaching_duration - curr_time)*time_scale , initial_estimate=None)
+            to_execute = controller.get_velocity(result)
+            to_execute_timespan = np.linspace(curr_time, goal_reaching_duration, controller.N)
+            execute_action_time = 1.0 # sec
 
+        # interpolate the velocities
+        execute_vel = np.interp(curr_time, to_execute_timespan, to_execute[:,0], left=to_execute[0,0], right=to_execute[-1,0])
+        execute_w = np.interp(curr_time, to_execute_timespan, to_execute[:,1], left=to_execute[0,1], right=to_execute[-1,1])
+
+        wl, wr = controller.cmd2wheel(np.array([execute_vel, execute_w])*time_scale)
+        execute_action_time -= env.step_dt
 
         # test_cmd = [2.4, np.pi/6]
         # wl, wr = controller.cmd2wheel(test_cmd)

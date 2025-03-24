@@ -5,14 +5,14 @@ from fgmp.factors import PriorFactor, DynFactor, VPriorFactor, VBetweenFactor
 
 
 class WheelOnlyController:
-    def __init__(self, N = 100):
+    def __init__(self, N = 50):
         self.N = N
-        self.dyn_noise = gtsam.noiseModel.Diagonal.Sigmas(np.ones(3)*8e-4)
-        self.v_prior_noise = gtsam.noiseModel.Diagonal.Sigmas(np.array([10, 10]))
-        self.v_between_noise = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.05, 3]))
-        self.x_prior_noise = gtsam.noiseModel.Diagonal.Sigmas(np.ones(3)*2e-1)
-        self.constraint_noise3 = gtsam.noiseModel.Diagonal.Sigmas(np.ones(3)*1e-6)
-        self.constraint_noise2 = gtsam.noiseModel.Diagonal.Sigmas(np.ones(2)*1e-1)
+        self.dyn_noise = gtsam.noiseModel.Diagonal.Sigmas(np.array([1, 1, 1])*5e-4)
+        self.v_prior_noise = gtsam.noiseModel.Diagonal.Sigmas(np.array([1, 1])*1e5)
+        self.v_between_noise = gtsam.noiseModel.Diagonal.Sigmas(np.array([1, 1])*1e1)
+        self.x_prior_noise = gtsam.noiseModel.Diagonal.Sigmas(np.ones(3)*5e-4)
+        self.constraint_noise3 = gtsam.noiseModel.Diagonal.Sigmas(np.ones(3)*1e-4)
+        self.constraint_noise2 = gtsam.noiseModel.Diagonal.Sigmas(np.ones(2)*1e-4)
 
     def cmd2wheel(self, cmd):
         '''
@@ -53,7 +53,12 @@ class WheelOnlyController:
 
         graph = gtsam.NonlinearFactorGraph()
         params = gtsam.LevenbergMarquardtParams()
-        params.setMaxIterations(100)  # Maximum number of iterations
+        # params = gtsam.GaussNewtonParams()  # Use Gauss-Newton for better performance
+        # params.setMaxIterations(100)  # More iterations
+        # params.setAbsoluteErrorTol(1e-8)  # Stricter tolerance
+        # params.setRelativeErrorTol(1e-8)
+        # params.setVerbosity("ERROR")  # See
+        
         # params.setRelativeErrorTol(1e-6)  # Relative error tolerance for convergence
         # params.setAbsoluteErrorTol(1e-6)  # Absolute error tolerance
         # params.setlambdaInitial(1e-3)  # Initial damping factor
@@ -62,16 +67,16 @@ class WheelOnlyController:
         ## build factor graph
         dt = duration / (self.N-1)
         for i in range(self.N-1):
-            graph.push_back(DynFactor(self.dyn_noise, X(i), V(i+1), X(i+1), 0, dt))
-            graph.push_back(VPriorFactor(self.v_prior_noise, V(i+1), np.array([0.0, 0.0])))
+            graph.push_back(DynFactor(self.dyn_noise, X(i), V(i), X(i+1), 0, dt))
+            graph.push_back(VPriorFactor(self.v_prior_noise, V(i), np.array([0.0, 0.0])))
             graph.push_back(PriorFactor(self.x_prior_noise, X(i), (goal-start)/(self.N-1)*i + start))
             if i < self.N-2:
                 graph.push_back(VBetweenFactor(self.v_between_noise, V(i), V(i+1)))
 
         graph.push_back(PriorFactor(self.constraint_noise3, X(0), start))
-        graph.push_back(PriorFactor(self.constraint_noise3, X(self.N-1), goal))
+        graph.push_back(PriorFactor(gtsam.noiseModel.Diagonal.Sigmas(np.ones(3)*4.0), X(self.N-1), goal))
         graph.push_back(VPriorFactor(self.constraint_noise2, V(0), v_start))
-        graph.push_back(VPriorFactor(self.constraint_noise2, V(self.N-1), v_goal))
+        graph.push_back(VPriorFactor(gtsam.noiseModel.Diagonal.Sigmas(np.ones(2)*4.0), V(self.N-1), v_goal))
 
 
         # add estimate
@@ -88,6 +93,7 @@ class WheelOnlyController:
 
         
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial_estimate, params)
+        # optimizer = gtsam.GaussNewtonOptimizer(graph, initial_estimate, params)
         result = optimizer.optimize()
 
         return result

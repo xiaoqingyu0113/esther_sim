@@ -1,11 +1,12 @@
 import numpy as np
 from fgmp.controller import WheelOnlyController
 import matplotlib.pyplot as plt
-
+from fgmp.factors import compute_pose
+from gtsam.symbol_shorthand import V, X
 
 
 class EstherController(WheelOnlyController):
-    def __init__(self, r_wheel=0.320, l_wheel=0.690, th_wheel=20/180*np.pi, N = 50):
+    def __init__(self, r_wheel=0.320, l_wheel=0.690, th_wheel=20/180*np.pi, N = 10):
         super().__init__(N)
         self.r_wheel = r_wheel
         self.l_wheel = l_wheel
@@ -43,10 +44,12 @@ controller = EstherController()
 # start = np.array([1.11403875e-04 ,1.84215605e-06, 1.40647126e-05])
 start = np.array([-0.0158763 ,  0.00099092 ,-0.04902387])
 v_start = np.array([0.02187854766845703, 1.1024384196366346])
+
+# start = np.array([0, 0, 0])  # Initial pose
 # v_start = np.array([0, 0])
 goal = np.array([5, 5, 0])
 v_goal = np.array([0, 0])
-goal_reaching_duration = 10.0
+goal_reaching_duration = 50
 
 fig = plt.figure()
 ax = fig.add_subplot(111)
@@ -54,13 +57,17 @@ ax = fig.add_subplot(111)
 result = None
 result = controller.inference(start, v_start, goal, v_goal, goal_reaching_duration, initial_estimate=result)
 
+dyn_error = [result.atVector(X(i+1)) - compute_pose(result.atVector(X(i)) , result.atVector(V(i+1)) , goal_reaching_duration / (1+controller.N)) for i in range(controller.N-1)]
+
+for de in dyn_error:
+    print(de)
+
+
 # plot the result
-
-
 poses = controller.get_pose(result)
 th = poses[:, 2]
 
-print(th)
+# print(th)
 ax.plot(poses[:, 0], poses[:, 1], label='trajectory')
 ax.plot(start[0], start[1], 'ro', label='start')
 ax.plot(goal[0], goal[1], 'go', label='goal')
