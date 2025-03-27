@@ -50,46 +50,52 @@ class WheelOnlyController:
         duration: time spent to reach the goal
         initial_estimate: may reuse previous result
         '''
+        N =  50
+        t = np.linspace(0, duration, N)
 
         graph = gtsam.NonlinearFactorGraph()
         params = gtsam.LevenbergMarquardtParams()
-        # params = gtsam.GaussNewtonParams()  # Use Gauss-Newton for better performance
-        # params.setMaxIterations(100)  # More iterations
-        # params.setAbsoluteErrorTol(1e-8)  # Stricter tolerance
-        # params.setRelativeErrorTol(1e-8)
-        # params.setVerbosity("ERROR")  # See
-        
-        # params.setRelativeErrorTol(1e-6)  # Relative error tolerance for convergence
-        # params.setAbsoluteErrorTol(1e-6)  # Absolute error tolerance
-        # params.setlambdaInitial(1e-3)  # Initial damping factor
-        # params.setVerbosityLM("SUMMARY")  # Verbosity level: SILENT, SUMMARY, DETAILED
 
         ## build factor graph
-        dt = duration / (self.N-1)
-        for i in range(self.N-1):
-            graph.push_back(DynFactor(self.dyn_noise, X(i), V(i), X(i+1), 0, dt))
-            graph.push_back(VPriorFactor(self.v_prior_noise, V(i), np.array([0.0, 0.0])))
-            graph.push_back(PriorFactor(self.x_prior_noise, X(i), (goal-start)/(self.N-1)*i + start))
-            if i < self.N-2:
-                graph.push_back(VBetweenFactor(self.v_between_noise, V(i), V(i+1)))
+        dt = duration / (N-1)
+        for i in range(N-1):
+            graph.push_back(DynFactor(gtsam.noiseModel.Diagonal.Sigmas(np.array([1, 1, 1])*5e-3), 
+                                    X(i), 
+                                    V(i), 
+                                    X(i+1), 0, dt))
+            
+            graph.push_back(VPriorFactor(gtsam.noiseModel.Diagonal.Sigmas(np.array([1, 1])*5e0), 
+                                        V(i), 
+                                        np.array([0.0, 0.0])))
+            
+            # graph.push_back(PriorFactor( gtsam.noiseModel.Diagonal.Sigmas(np.array([1, 1, 1])*5e2), 
+            #                             X(i), 
+            #                             (goal-start)/(N-1)*i + start))
+            if i < N-2:
+                graph.push_back(VBetweenFactor(gtsam.noiseModel.Diagonal.Sigmas(np.array([1, 1])*5e1),
+                                                V(i),
+                                                V(i+1)))
 
-        graph.push_back(PriorFactor(self.constraint_noise3, X(0), start))
-        graph.push_back(PriorFactor(gtsam.noiseModel.Diagonal.Sigmas(np.ones(3)*4.0), X(self.N-1), goal))
-        graph.push_back(VPriorFactor(self.constraint_noise2, V(0), v_start))
-        graph.push_back(VPriorFactor(gtsam.noiseModel.Diagonal.Sigmas(np.ones(2)*4.0), V(self.N-1), v_goal))
+        graph.push_back(PriorFactor(gtsam.noiseModel.Diagonal.Sigmas(np.array([1, 1, 1])*5e-4), 
+                                    X(0), start))
+        graph.push_back(PriorFactor( gtsam.noiseModel.Diagonal.Sigmas(np.array([1, 1, 1])*1e-4), 
+                                    X(N-1), goal))
+        graph.push_back(VPriorFactor( gtsam.noiseModel.Diagonal.Sigmas(np.array([1, 1])*5e-4), 
+                                    V(0), v_start))
+        graph.push_back(VPriorFactor(gtsam.noiseModel.Diagonal.Sigmas(np.ones(2)*5e-4),
+                                    V(N-1), v_goal))
 
 
         # add estimate
-        if initial_estimate is None:
-            initial_estimate = gtsam.Values()
-            initial_estimate.insert(X(0), start)
-            initial_estimate.insert(X(self.N-1), goal)
-            initial_estimate.insert(V(0), v_start)
-            initial_estimate.insert(V(self.N-1), v_goal)
+        initial_estimate = gtsam.Values()
+        initial_estimate.insert(X(0), start)
+        initial_estimate.insert(X(N-1), goal)
+        initial_estimate.insert(V(0), v_start)
+        initial_estimate.insert(V(N-1), v_goal)
 
-            for i in range(1, self.N-1):
-                initial_estimate.insert(X(i), (goal-start)/(self.N-1)*i + start)
-                initial_estimate.insert(V(i), np.array([0, 0]))
+        for i in range(1, N-1):
+            initial_estimate.insert(X(i), (goal-start)/(N-1)*i + start)
+            initial_estimate.insert(V(i), np.array([1.0, 0]))
 
         
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial_estimate, params)

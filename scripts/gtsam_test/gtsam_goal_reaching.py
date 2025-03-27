@@ -121,7 +121,7 @@ def main():
     _wait_awhile(env, action, duration=1.0)
 
     result = None
-    goal_reaching_duration = 30.0
+    goal_reaching_duration = 10.0
     execute_action_time = -1
     while simulation_app.is_running():
         # wait for a while to stable the initial dynamics
@@ -155,12 +155,14 @@ def main():
         print('v_goal: ', v_goal)
         print('goal_reaching_duration: ', goal_reaching_duration - curr_time)
 
-        time_scale = 4.0
+        time_scale = 1.0
         if execute_action_time <= 0:
+            if goal_reaching_duration - curr_time < 0:
+                goal_reaching_duration = curr_time + 0.5
             result = controller.inference(start, v_start, goal, v_goal, (goal_reaching_duration - curr_time)*time_scale , initial_estimate=None)
             to_execute = controller.get_velocity(result)
             to_execute_timespan = np.linspace(curr_time, goal_reaching_duration, controller.N)
-            execute_action_time = 1.0 # sec
+            execute_action_time = 0.1 # sec
 
         # interpolate the velocities
         execute_vel = np.interp(curr_time, to_execute_timespan, to_execute[:,0], left=to_execute[0,0], right=to_execute[-1,0])

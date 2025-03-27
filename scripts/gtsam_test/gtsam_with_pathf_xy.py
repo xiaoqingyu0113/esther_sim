@@ -37,7 +37,7 @@ print('---------------------------------',args_cli.headless)
 def prescribed_path():
     stamped_path_np = gtsam_naive_path(start = np.array([0, 0, 0]),
                                         v_start = np.array([0, 0]),
-                                        goal = np.array([5, 5, -np.pi]),
+                                        goal = np.array([5, 5, 0]),
                                         v_goal = np.array([0, 0]),
                                         duration=5.0,
                                         N=50
@@ -58,9 +58,9 @@ def get_next_waypoint(stamped_path: torch.Tensor, t:float):
     
     # Handle edge cases where t is outside the path's time range
     if idx == 0:
-        return stamped_path[0, 1:]  # Return the first waypoint
+        return stamped_path[0, 1:3]  # Return the first waypoint
     if idx == len(stamped_path):
-        return stamped_path[-1, 1:]  # Return the last waypoint
+        return stamped_path[-1, 1:3]  # Return the last waypoint
     
     # Get the two nearest points
     t0, x0, y0, th0 = stamped_path[idx - 1]
